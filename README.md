@@ -137,3 +137,7 @@ This is a defensive local monitoring tool. It does not intercept packets, collec
 ## Recommended workflow
 
 Learn a baseline while the computer is doing normal work with `python main.py baseline --seconds 60`, then start `python main.py monitor`. Keep the baseline from a normal period rather than creating it during unusual activity.
+
+## Alert metadata
+
+Detector findings include machine-readable `observed` and `threshold` values where applicable. This makes the output easier to consume from a future dashboard or automation layer while keeping the detector read-only.
