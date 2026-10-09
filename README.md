@@ -141,3 +141,7 @@ Learn a baseline while the computer is doing normal work with `python main.py ba
 ## Alert metadata
 
 Detector findings include machine-readable `observed` and `threshold` values where applicable. This makes the output easier to consume from a future dashboard or automation layer while keeping the detector read-only.
+
+## Baseline summary
+
+Baseline summaries now include the observed connection-count range in addition to sample count and average. This helps distinguish a stable baseline from a highly variable one.
