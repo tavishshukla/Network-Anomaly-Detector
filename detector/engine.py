@@ -26,6 +26,8 @@ class AnomalyDetector:
                 "severity": "HIGH",
                 "reason": "connection-count anomaly",
                 "details": f"{len(rows)} active connections (threshold {threshold})",
+                "observed": len(rows),
+                "threshold": threshold,
             })
 
         for ip, count in ips.items():
@@ -34,6 +36,8 @@ class AnomalyDetector:
                     "severity": "MEDIUM",
                     "reason": "new destination",
                     "details": f"{ip} seen {count} times",
+                    "observed": count,
+                    "threshold": 2,
                 })
 
         unusual = [port for port in ports if str(port) not in self.b.ports]
@@ -42,6 +46,8 @@ class AnomalyDetector:
                 "severity": "LOW",
                 "reason": "new remote port",
                 "details": ", ".join(map(str, unusual[:10])),
+                "observed": len(unusual),
+                "threshold": 1,
             })
 
         return out
