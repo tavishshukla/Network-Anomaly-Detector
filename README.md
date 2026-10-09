@@ -5,11 +5,13 @@ A read-only local network anomaly detector written in Python. It learns a simple
 ## Features
 
 - Read-only network telemetry using `psutil`
-- Baseline learning
+- Configurable baseline duration and sampling interval
+- Configurable baseline file location
+- Connection-count anomaly detection
 - New destination detection
 - New remote-port detection
-- Connection-count anomaly detection
-- Continuous monitoring
+- Clear monitoring output
+- Graceful Ctrl+C shutdown
 - Automated tests
 - No packet interception
 - No credential collection
@@ -22,46 +24,25 @@ A read-only local network anomaly detector written in Python. It learns a simple
 - Python **3.11 or newer**
 - Git
 
-## 1. Install Python
+## Setup
 
-Download Python from:
-
-https://www.python.org/downloads/
-
-On Windows, make sure **Add Python to PATH** is checked during installation.
+Install Python from https://www.python.org/downloads/ and Git from https://git-scm.com/downloads/.
 
 Verify:
 
 ```bash
 python --version
-```
-
-Linux/macOS may use:
-
-```bash
-python3 --version
-```
-
-## 2. Install Git
-
-Download Git from:
-
-https://git-scm.com/downloads
-
-Verify:
-
-```bash
 git --version
 ```
 
-## 3. Clone the repository
+Clone the project:
 
 ```bash
 git clone https://github.com/tavishshukla/Network-Anomaly-Detector.git
 cd Network-Anomaly-Detector
 ```
 
-## 4. Create a virtual environment
+Create and activate a virtual environment.
 
 ### Windows
 
@@ -77,89 +58,60 @@ python3 -m venv .venv
 source .venv/bin/activate
 ```
 
-## 5. Install dependencies
-
-Upgrade pip:
+Install dependencies:
 
 ```bash
 python -m pip install --upgrade pip
-```
-
-Install requirements:
-
-```bash
 python -m pip install -r requirements.txt
 ```
 
-You do not normally need to install pip separately because Python includes it.
+## Learn a baseline
 
-## 6. Learn a baseline
-
-Before monitoring, let the program observe your normal network activity.
-
-For one minute:
+Run this while your computer is behaving normally:
 
 ```bash
 python main.py baseline --seconds 60
 ```
 
-For a shorter test:
+The default baseline is saved as `baseline.json`.
+
+You can choose another location:
 
 ```bash
-python main.py baseline --seconds 30
+python main.py baseline --seconds 60 --interval 1 --baseline-file data/my-baseline.json
 ```
 
-The baseline is saved locally in:
-
-```
-baseline.json
-```
-
-For the most useful results, create the baseline while your computer is behaving normally.
-
-## 7. Start monitoring
-
-Run:
+## Monitor
 
 ```bash
 python main.py monitor
 ```
 
-The program checks local network connections every few seconds.
+Choose a custom interval and baseline if needed:
 
-If something unusual is detected, it prints an alert such as:
-
-```
-[MEDIUM] New destination observed | ...
+```bash
+python main.py monitor --interval 2 --baseline-file data/my-baseline.json
 ```
 
-Press `Ctrl+C` to stop.
+Stop with `Ctrl+C`.
 
-## 8. Run the tests
+If no baseline exists, the program explains how to create one instead of crashing.
+
+## How detection works
+
+The detector compares current local connection telemetry with the learned baseline.
+
+- **HIGH — connection-count anomaly:** current connections are substantially above the learned average.
+- **MEDIUM — new destination:** an unseen remote IP appears repeatedly.
+- **LOW — new remote port:** a remote port not present in the baseline is observed.
+
+These are anomaly indicators, not proof of malicious activity. Normal software can create new connections.
+
+## Tests
 
 ```bash
 python -m pytest
 ```
-
-## How detection works
-
-The current detector compares live local connection information against the learned baseline.
-
-It can flag:
-
-### High connection count
-
-If the current number of connections becomes significantly higher than the learned normal level.
-
-### New destination
-
-A previously unseen remote IP address appearing repeatedly.
-
-### New remote port
-
-A remote port that was not present in the learned baseline.
-
-These are anomaly indicators, not proof that an attack is happening. A completely legitimate application can create a new connection and trigger an alert.
 
 ## Project structure
 
@@ -176,32 +128,6 @@ Network-Anomaly-Detector/
 │   └── engine.py
 └── tests/
     └── test_detector.py
-```
-
-## Troubleshooting
-
-### Permission/access errors
-
-Some operating systems restrict access to certain network connection information. Run the program only with permissions appropriate for your own machine.
-
-### No alerts appear
-
-That can be completely normal. The detector is looking for deviations from your baseline.
-
-Try creating a fresh baseline:
-
-```bash
-python main.py baseline --seconds 60
-```
-
-Then start monitoring again.
-
-### Missing module
-
-Run:
-
-```bash
-python -m pip install -r requirements.txt
 ```
 
 ## Security model
