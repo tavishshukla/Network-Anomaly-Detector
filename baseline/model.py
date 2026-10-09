@@ -4,7 +4,6 @@ from pathlib import Path
 
 PATH = Path("baseline.json")
 
-
 class Baseline:
     def __init__(self, path: Path | str = PATH):
         self.path = Path(path)
@@ -28,6 +27,7 @@ class Baseline:
             "ips": dict(self.ips),
             "counts": self.counts,
         }
+        self.path.parent.mkdir(parents=True, exist_ok=True)
         self.path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
 
     def load(self):
@@ -43,8 +43,11 @@ class Baseline:
         return sum(self.counts) / len(self.counts) if self.counts else 0.0
 
     def summary(self):
+        if not self.counts:
+            return "empty baseline"
         return (
             f"{len(self.ports)} ports, {len(self.ips)} remote IPs, "
             f"{len(self.counts)} samples, "
-            f"{self.average_connections():.1f} average connections"
+            f"{self.average_connections():.1f} average connections, "
+            f"range {min(self.counts)}-{max(self.counts)}"
         )
