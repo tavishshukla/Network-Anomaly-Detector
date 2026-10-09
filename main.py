@@ -1,28 +1,68 @@
 from collector.network import snapshot
 from baseline.model import Baseline
 from detector.engine import AnomalyDetector
-import argparse, time
+import argparse
+import time
+
 
 def main():
-    p=argparse.ArgumentParser(description="Read-only local network anomaly detector")
-    p.add_argument("mode",choices=["baseline","monitor"],nargs="?",default="monitor")
-    p.add_argument("--seconds",type=int,default=30)
-    a=p.parse_args()
-    b=Baseline()
-    if a.mode=="baseline":
-        print("Learning baseline from local connections...")
-        end=time.time()+a.seconds
-        while time.time()<end:
-            b.observe(snapshot()); time.sleep(1)
-        b.save(); print(f"Baseline saved: {b.summary()}")
-        return
-    b.load()
-    d=AnomalyDetector(b)
-    print("Monitoring local network connections (read-only). Ctrl+C to stop.")
-    while True:
-        events=snapshot()
-        for e in d.check(events):
-            print(f"[{e['severity']}] {e['reason']} | {e['details']}")
-        time.sleep(2)
+    parser = argparse.ArgumentParser(
+        description="Read-only local network anomaly detector"
+    )
+    parser.add_argument(
+        "mode",
+        choices=["baseline", "monitor"],
+        nargs="?",
+        default="monitor",
+    )
+    parser.add_argument("--seconds", type=int, default=30)
+    parser.add_argument("--interval", type=float, default=2.0)
+    parser.add_argument(
+        "--baseline-file",
+        default="baseline.json",
+        help="Path used to save/load the baseline",
+    )
+    args = parser.parse_args()
 
-if __name__=="__main__": main()
+    if args.seconds <= 0:
+        parser.error("--seconds must be greater than 0")
+    if args.interval <= 0:
+        parser.error("--interval must be greater than 0")
+
+    baseline = Baseline(args.baseline_file)
+
+    if args.mode == "baseline":
+        print("Learning baseline from local connections...")
+        end = time.time() + args.seconds
+        while time.time() < end:
+            baseline.observe(snapshot())
+            time.sleep(args.interval)
+        baseline.save()
+        print(f"Baseline saved to {args.baseline_file}")
+        print(baseline.summary())
+        return
+
+    if not baseline.load():
+        print("No baseline found. Run:")
+        print(f"  python main.py baseline --seconds 60 --baseline-file {args.baseline_file}")
+        return
+
+    detector = AnomalyDetector(baseline)
+    print("Monitoring local network connections (read-only). Ctrl+C to stop.")
+    print(f"Using baseline: {args.baseline_file}")
+
+    try:
+        while True:
+            rows = snapshot()
+            for event in detector.check(rows):
+                print(
+                    f"[{event['severity']}] "
+                    f"{event['reason']} | {event['details']}"
+                )
+            time.sleep(args.interval)
+    except KeyboardInterrupt:
+        print("\nMonitoring stopped.")
+
+
+if __name__ == "__main__":
+    main()
